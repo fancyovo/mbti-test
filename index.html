@@ -29,6 +29,7 @@
             color: var(--text);
             margin: 0;
             padding: 0;
+            /* 桌面端保持全屏，移动端在媒体查询中覆盖 */
             height: 100vh;
             overflow: hidden;
         }
@@ -48,7 +49,7 @@
             overflow-y: auto;
             padding: 20px;
             animation: fadeIn 0.3s ease;
-            -webkit-overflow-scrolling: touch;
+            -webkit-overflow-scrolling: touch; /* iOS顺滑滚动 */
         }
         .page.active { display: flex; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -148,6 +149,7 @@
             cursor: pointer;
             transition: all 0.2s;
             font-size: 0.95rem;
+            /* 移动端点击优化 */
             min-height: 50px;
             display: flex;
             align-items: center;
@@ -171,6 +173,7 @@
             padding: 0 20px 20px 20px;
         }
 
+        /* 左侧：数据面板 */
         .left-panel {
             width: 380px;
             background: var(--card-bg);
@@ -183,6 +186,7 @@
             flex-direction: column;
         }
 
+        /* 右侧：聊天面板 */
         .right-panel {
             flex: 1;
             background: var(--card-bg);
@@ -193,6 +197,7 @@
             overflow: hidden;
         }
 
+        /* 图表样式 & Tooltip */
         .chart-row { display: flex; align-items: center; margin-bottom: 15px; font-size: 0.9rem; }
         
         .chart-label-container {
@@ -203,6 +208,7 @@
         
         .chart-label { font-weight: bold; color: var(--primary); border-bottom: 1px dotted #999; }
 
+        /* Tooltip CSS */
         .chart-label-container:hover::after {
             content: attr(data-tooltip);
             position: absolute;
@@ -248,6 +254,7 @@
             letter-spacing: 2px;
         }
 
+        /* 聊天窗口样式 */
         .chat-header {
             padding: 15px;
             border-bottom: 1px solid var(--border);
@@ -267,7 +274,7 @@
             font-size: 0.85rem;
             transition: all 0.2s;
             color: #666;
-            flex-grow: 1;
+            flex-grow: 1; /* 移动端按钮撑满 */
             text-align: center;
         }
         .ai-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
@@ -350,6 +357,7 @@
             font-size: 0.9rem;
         }
 
+        /* Markdown 样式 */
         .markdown-body h1, .markdown-body h2 { font-size: 1.2em; margin-top: 1em; }
         .markdown-body p { margin-bottom: 0.8em; }
         .markdown-body ul { padding-left: 20px; }
@@ -363,7 +371,11 @@
         }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
+        /* =========================================
+           移动端适配核心代码 (Responsive Design)
+           ========================================= */
         @media (max-width: 900px) {
+            /* 1. 全局布局调整：允许滚动 */
             body { 
                 height: auto; 
                 overflow-y: auto; 
@@ -378,13 +390,17 @@
                 height: auto;
                 overflow: visible;
             }
+
+            /* 2. 首页调整 */
             .home-content {
                 padding: 30px 20px;
                 margin-top: 20px;
             }
             .mode-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, 1fr); /* 强制两列 */
             }
+
+            /* 3. 答题页调整 */
             .quiz-container {
                 padding: 20px;
                 min-height: auto;
@@ -392,8 +408,9 @@
             .question-text {
                 font-size: 1.2rem;
                 margin: 20px 0;
-                min-height: 100px;
+                min-height: 100px; /* 保证文字少时也有高度 */
             }
+            /* 选项按钮改为纵向排列，方便单手点击 */
             .options-row {
                 flex-direction: column;
                 gap: 12px;
@@ -404,22 +421,30 @@
                 text-align: center;
                 font-size: 1rem;
             }
+
+            /* 4. 结果页调整 */
             .result-layout {
-                flex-direction: column;
+                flex-direction: column; /* 上下排列 */
                 padding: 0 10px 20px 10px;
                 height: auto;
             }
+
+            /* 左侧面板变宽 */
             .left-panel {
                 width: 100%;
                 height: auto;
                 margin-bottom: 20px;
                 padding: 20px;
             }
+
+            /* 右侧聊天面板 */
             .right-panel {
                 width: 100%;
-                height: 600px;
-                flex: none;
+                height: 600px; /* 给聊天框固定高度 */
+                flex: none; /* 防止被压缩 */
             }
+
+            /* 5. Tooltip 移动端位置调整 */
             .chart-label-container:hover::after {
                 left: 0;
                 top: 100%;
@@ -429,8 +454,10 @@
                 z-index: 999;
             }
             .chart-label-container:hover::before {
-                display: none;
+                display: none; /* 隐藏小三角 */
             }
+            
+            /* 字体调整 */
             .type-badge { font-size: 2.8rem; }
             .chat-header span { width: 100%; margin-bottom: 5px; }
         }
@@ -544,10 +571,7 @@
 
 <script>
     // --- 0. 基础配置与数据 ---
-    
-    // ⚠️⚠️⚠️ 请将下面的 URL 替换为你第一步在 Cloudflare 部署的 Worker URL ⚠️⚠️⚠️
-    // 例如: "https://jung-proxy.yourname.workers.dev"
-    const WORKER_URL = "https://mbti-test.992723265.workers.dev"; 
+    // API_KEY 已移除，将在服务器端处理
     
     if (typeof marked !== 'undefined') {
         marked.setOptions({
@@ -567,7 +591,7 @@
         "Ni": "内倾直觉：关注本质规律、未来趋势、宏观愿景、直觉洞察。"
     };
 
-    // 题库 (256题)
+    // 题库 (256题) - 保持原样
     const rawText = `
 1. 我认为自己是一个在混乱局面中能迅速建立指挥链条的人。
 2. 我习惯通过可视化的图表、数据或KPI来衡量自己一天的成就感。
@@ -735,7 +759,7 @@
 164. 我倾向于通过对比过去和现在来判断事物是否正常。
 165. 我认为细节决定成败，我无法容忍数据或事实上的微小偏差。
 166. 我觉得自己需要稳定的日常惯例（Routine）来维持内心的平静。
-167. 我经常在脑海中像放电影一样回放过去的场景，细节清晰可见。
+167. 我经常会在脑海中像放电影一样回放过去的场景，细节清晰可见。
 168. 我觉得自己是一个守成者，比起创新，我更擅长维护和优化现有体系。
 169. 朋友们常说我记性好得可怕，能记得几年前发生的琐事。
 170. 别人经常评价我做事稳重、靠谱，把事情交给我很放心。
@@ -1124,15 +1148,13 @@
         appendMessageToUI('assistant', '...', true);
 
         try {
-            // ⚠️ 修改：请求你的 Cloudflare Worker，而不是直接请求 DeepSeek
-            const response = await fetch(WORKER_URL, {
+            // 修改：调用我们自己的API路由，而不是直接调用DeepSeek
+            const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
-                    // 注意：这里不再发送 Authorization 头，Key 由 Worker 添加
                 },
                 body: JSON.stringify({
-                    model: "deepseek-chat",
                     messages: messages,
                     stream: true
                 })
@@ -1169,8 +1191,7 @@
             if(box.lastElementChild) box.lastElementChild.innerHTML = marked.parse(cleanText);
 
         } catch (error) {
-            appendMessageToUI('assistant', `**错误**：连接失败 (${error.message})。请检查网络或 Worker 配置。`);
-            console.error(error);
+            appendMessageToUI('assistant', `**错误**：连接失败 (${error.message})`);
         } finally {
             isGenerating = false;
         }
