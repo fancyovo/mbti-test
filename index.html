@@ -855,6 +855,7 @@
     };
     let currentAiTab = 'general';
     let isGenerating = false;
+    const isDebug = true;
 
     // --- 2. 逻辑控制 ---
 
@@ -1098,9 +1099,7 @@
         ${promptContent}
         
         排版要求：严格遵守markdown语法，若干#构成的标题必须出现在行的开头且后面跟着空格，段落内加粗内容必须前后恰好各有两个*。
-        文风要求：重点突出，条理清晰，深入浅出
-        
-        特别要求：先将我的话完整重复一遍（放在代码框中），再回答（放在另一个代码框中）`;
+        文风要求：重点突出，条理清晰，深入浅出`;
 
         chatHistory[mode].push({ role: "system", content: systemPrompt });
         await streamAiResponse(mode, [{ role: "system", content: systemPrompt }]);
@@ -1120,25 +1119,20 @@
     async function streamAiResponse(mode, messages) {
         isGenerating = true;
         let fullText = "";
-        appendMessageToUI('assistant', '...', true);
+        // 创建一个新的消息气泡
+        const msgDiv = appendMessageToUI('assistant', '...', true);
+        
+        // 用于解决分包问题的缓冲区
+        let buffer = ""; 
 
         try {
-            // 修改点：请求本地 API 代理，而不是直接请求 DeepSeek
             const response = await fetch("/api/chat", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                    // 注意：这里不再需要 Authorization 头，后端会处理
-                },
-                body: JSON.stringify({
-                    messages: messages
-                    // model 和 stream 参数也移到后端处理，这里只传消息
-                })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ messages: messages })
             });
 
-            if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder("utf-8");
@@ -1146,33 +1140,71 @@
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
+
+                // 1. 解码当前块并追加到缓冲区
                 const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n');
+                buffer += chunk;
+
+                // 2. 按换行符分割缓冲区
+                const lines = buffer.split('\n');
+
+                // 3. 保留最后一个可能不完整的片段在缓冲区中，等待下一次拼接
+                buffer = lines.pop(); 
+
                 for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const jsonStr = line.slice(6);
-                        if (jsonStr === '[DONE]') break;
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine || trimmedLine === 'data: [DONE]') continue;
+
+                    if (trimmedLine.startsWith('data: ')) {
+                        const jsonStr = trimmedLine.slice(6);
                         try {
                             const json = JSON.parse(jsonStr);
                             const content = json.choices[0].delta.content || "";
+                            
+                            // 【Debug】如果开启，打印原始内容
+                            if (isDebug) console.log("Chunk:", content);
+
                             fullText += content;
-                            appendMessageToUI('assistant', fullText, true);
-                        } catch (e) {}
+
+                            // 4. 实时渲染
+                            // 简单的防抖动优化：只有当内容包含换行或标点时才频繁渲染，
+                            // 或者每隔一定长度渲染，这里为了流畅度保持每次渲染，
+                            // 但要确保 marked 解析的是 cleanText
+                            const cleanText = fullText.replace(/\*\*\s+(.*?)\s+\*\*/g, '**$1**');
+                            
+                            // 只有当 msgDiv 存在时才更新
+                            if (msgDiv) {
+                                msgDiv.innerHTML = marked.parse(cleanText) + '<span class="cursor"></span>';
+                                // 保持滚动到底部
+                                const box = document.getElementById('chat-box');
+                                box.scrollTop = box.scrollHeight;
+                            }
+
+                        } catch (e) {
+                            // 如果 JSON 解析失败，说明这一行数据有问题（通常有了 buffer 机制后很少发生）
+                            if (isDebug) console.error("JSON Parse Error:", e, "Line:", trimmedLine);
+                        }
                     }
                 }
             }
+            
+            // 5. 结束后，记录完整历史
             chatHistory[mode].push({ role: "assistant", content: fullText });
-            const box = document.getElementById('chat-box');
-            const cleanText = fullText.replace(/\*\*\s+(.*?)\s+\*\*/g, '**$1**');
-            if(box.lastElementChild) box.lastElementChild.innerHTML = marked.parse(cleanText);
+            
+            // 6. 最后一次渲染，移除光标
+            if (msgDiv) {
+                const cleanText = fullText.replace(/\*\*\s+(.*?)\s+\*\*/g, '**$1**');
+                msgDiv.innerHTML = marked.parse(cleanText);
+            }
 
         } catch (error) {
-            appendMessageToUI('assistant', `**错误**：连接失败 (${error.message})`);
+            if (msgDiv) msgDiv.innerHTML += `<br><span style="color:red">**错误**：连接中断 (${error.message})</span>`;
             console.error(error);
         } finally {
             isGenerating = false;
         }
     }
+
 
     // --- 5. 导入导出功能 ---
 
