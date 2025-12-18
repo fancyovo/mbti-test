@@ -1098,7 +1098,9 @@
         ${promptContent}
         
         排版要求：严格遵守markdown语法，若干#构成的标题必须出现在行的开头且后面跟着空格，段落内加粗内容必须前后恰好各有两个*。
-        文风要求：重点突出，条理清晰，深入浅出`;
+        文风要求：重点突出，条理清晰，深入浅出
+        
+        特别要求：先将我的话完整重复一遍（放在代码框中），再回答（放在另一个代码框中）`;
 
         chatHistory[mode].push({ role: "system", content: systemPrompt });
         await streamAiResponse(mode, [{ role: "system", content: systemPrompt }]);
