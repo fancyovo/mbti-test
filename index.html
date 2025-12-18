@@ -1068,9 +1068,8 @@
             请生成【综合人格解析】。
             要求：
             1. **核心结论**：用通俗易懂、甚至带点幽默的“大白话”概括我的状态。
-            2. **详细分析**：结合我的八维高低分进行解读。
-            3. **优势与盲点**：使用Markdown表格展示。
-            4. **行动建议**：3条具体建议。
+            2. **详细分析**：结合我的八维得分和mbti进行解读。
+            3. **行动建议**：3条具体建议。
             `;
         } else if (mode === 'career') {
             promptContent = `
@@ -1098,7 +1097,8 @@
         
         ${promptContent}
         
-        排版要求：使用Markdown（二级标题##，加粗，列表，表格）。语气要像老朋友聊天一样自然，但要有深度。`;
+        排版要求：严格遵守markdown语法，若干#构成的标题必须出现在行的开头且后面跟着空格，段落内加粗内容必须前后恰好各有两个*。
+        文风要求：重点突出，条理清晰，深入浅出`;
 
         chatHistory[mode].push({ role: "system", content: systemPrompt });
         await streamAiResponse(mode, [{ role: "system", content: systemPrompt }]);

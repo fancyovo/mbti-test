@@ -31,7 +31,8 @@ export default async function handler(req) {
       body: JSON.stringify({
         model: "deepseek-chat",
         messages: messages,
-        stream: true // 强制开启流式传输
+        stream: true, // 强制开启流式传输
+        temperature: 0.5
       })
     });
 
